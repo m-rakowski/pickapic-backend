@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace PickapicBackend.Model
 {
-    public class Post
+    public class PostDTO
     {
         public long Id { get; set; }
         public string Question { get; set; }
