@@ -26,9 +26,12 @@ namespace PickapicBackend.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<PostDTO>>> GetPosts()
         {
-            return await _context.Posts
-                .Select(x => ItemToDTO(x))
-                .ToListAsync();
+            var posts = await _context.Posts.ToListAsync();
+
+            var images = posts.ConvertAll(post => post.Images);
+
+            return Ok();
+
         }
 
         [HttpGet("{id}")]
@@ -41,13 +44,18 @@ namespace PickapicBackend.Controllers
                 return NotFound();
             }
 
-            return ItemToDTO(post);
+            var images = _context.Images
+               .Where(image => image.PostId == id)
+               .ToList();
+
+            var imageDTOs = images.ConvertAll(image => ImageItemToDTO(image));
+            return new PostDTO { AdditionDate = post.AdditionDate, PostId = post.PostId, Question = post.Question, Images = imageDTOs };
         }
 
         [HttpPut("{id}")]
         public async Task<IActionResult> UpdatePost(long id, PostDTO postDTO)
         {
-            if (id != postDTO.Id)
+            if (id != postDTO.PostId)
             {
                 return BadRequest();
             }
@@ -85,7 +93,7 @@ namespace PickapicBackend.Controllers
 
             return CreatedAtAction(
                 nameof(GetPost),
-                new { id = post.Id },
+                new { id = post.PostId },
                 ItemToDTO(post));
         }
 
@@ -106,13 +114,23 @@ namespace PickapicBackend.Controllers
         }
 
         private bool PostExists(long id) =>
-             _context.Posts.Any(e => e.Id == id);
+             _context.Posts.Any(e => e.PostId == id);
 
         private static PostDTO ItemToDTO(Post post) =>
             new PostDTO
             {
-                Id = post.Id,
+                PostId = post.PostId,
                 Question = post.Question
+            };
+
+
+        private static ImageDTO ImageItemToDTO(Image image) =>
+            new ImageDTO
+            {
+                ImageId = image.ImageId,
+                PostId = image.PostId,
+                Url = image.Url
+
             };
     }
 }

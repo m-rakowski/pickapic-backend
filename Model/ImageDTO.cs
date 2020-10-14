@@ -5,13 +5,10 @@ using System.Threading.Tasks;
 
 namespace PickapicBackend.Model
 {
-    public class Post
+    public class ImageDTO
     {
+        public long ImageId { get; set; }
         public long PostId { get; set; }
-        public string Question { get; set; }
-        public DateTime AdditionDate { get; set; }
-        public virtual List<Image> Images { get; set; }
-
-
+        public string Url { get; set; }
     }
 }

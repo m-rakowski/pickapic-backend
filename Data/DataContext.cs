@@ -11,5 +11,6 @@ namespace PickapicBackend.Data
     {
         public DataContext (DbContextOptions<DataContext> options) : base (options) { }
         public DbSet<Post> Posts { get; set; }
+        public DbSet<Image> Images { get; set; }
     }
 }
