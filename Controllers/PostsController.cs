@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -26,12 +27,20 @@ namespace PickapicBackend.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<PostDTO>>> GetPosts()
         {
-            var posts = await _context.Posts.ToListAsync();
+            var postDTOs = (await _context.Posts.ToListAsync()).ConvertAll(post => PostToPostDTO(post));
 
-            var images = posts.ConvertAll(post => post.Images);
+            foreach (var postDTO in postDTOs)
+            {
+                var images = await _context.Images
+               .Where(image => image.PostId == postDTO.PostId)
+               .ToListAsync();
+                var imageDTOs = images.ConvertAll(image => ImageToImageDTO(image));
 
-            return Ok();
+                postDTO.Images = imageDTOs;
+               
+            }
 
+            return Ok(postDTOs);
         }
 
         [HttpGet("{id}")]
@@ -48,7 +57,7 @@ namespace PickapicBackend.Controllers
                .Where(image => image.PostId == id)
                .ToList();
 
-            var imageDTOs = images.ConvertAll(image => ImageItemToDTO(image));
+            var imageDTOs = images.ConvertAll(image => ImageToImageDTO(image));
             return new PostDTO { AdditionDate = post.AdditionDate, PostId = post.PostId, Question = post.Question, Images = imageDTOs };
         }
 
@@ -94,7 +103,7 @@ namespace PickapicBackend.Controllers
             return CreatedAtAction(
                 nameof(GetPost),
                 new { id = post.PostId },
-                ItemToDTO(post));
+                PostToPostDTO(post));
         }
 
         [HttpDelete("{id}")]
@@ -116,7 +125,7 @@ namespace PickapicBackend.Controllers
         private bool PostExists(long id) =>
              _context.Posts.Any(e => e.PostId == id);
 
-        private static PostDTO ItemToDTO(Post post) =>
+        private static PostDTO PostToPostDTO(Post post) =>
             new PostDTO
             {
                 PostId = post.PostId,
@@ -124,7 +133,7 @@ namespace PickapicBackend.Controllers
             };
 
 
-        private static ImageDTO ImageItemToDTO(Image image) =>
+        private static ImageDTO ImageToImageDTO(Image image) =>
             new ImageDTO
             {
                 ImageId = image.ImageId,
