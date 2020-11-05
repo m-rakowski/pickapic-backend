@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
@@ -21,100 +22,42 @@ namespace PickapicBackend.Controllers
         {
             _context = context;
             _logger = logger;
-        }
+        } 
 
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<ImageDTO>>> GetImages()
+        public async Task<ActionResult<IEnumerable<Image>>> GetImages()
         {
-            return await _context.Images
-                .Select(x => ItemToDTO(x))
-                .ToListAsync();
+            var images = await _context.Images.ToListAsync();
+            foreach (var image in images)
+            {
+                var votes = await _context.Votes
+               .Where(vote => vote.ImageId == image.ImageId)
+               .ToListAsync();
+
+                image.Votes = votes;       
+            }
+
+            var imageDTOs = images.ConvertAll(image => ImageToImageDTO(image));
+            return Ok(imageDTOs);
         }
 
         [HttpGet("{id}")]
         public async Task<ActionResult<ImageDTO>> GetImage(long id)
         {
-            var image = await _context.Images.FindAsync(id);
+            var post = await _context.Images.FindAsync(id);
 
-            if (image == null)
+            if (post == null)
             {
                 return NotFound();
             }
 
-            return ItemToDTO(image);
+            return Ok(ImageToImageDTO(post));
         }
+        private static ImageDTO ImageToImageDTO(Image image) => new ImageDTO {
+            ImageId = image.ImageId,
+            Url = image.Url,
+            Votes = image.Votes.ConvertAll(vote => new VoteDTO { VoteId = vote.VoteId })
 
-        [HttpPut("{id}")]
-        public async Task<IActionResult> UpdateImage(long id, ImageDTO imageDTO)
-        {
-            if (id != imageDTO.ImageId)
-            {
-                return BadRequest();
-            }
-
-            var image = await _context.Images.FindAsync(id);
-            if (image == null)
-            {
-                return NotFound();
-            }
-
-            image.Url = imageDTO.Url;
-
-            try
-            {
-                await _context.SaveChangesAsync();
-            }
-            catch (DbUpdateConcurrencyException) when (!ImageExists(id))
-            {
-                return NotFound();
-            }
-
-            return NoContent();
-        }
-
-        [HttpPost]
-        public async Task<ActionResult<ImageDTO>> CreateImage(ImageDTO imageDTO)
-        {
-            var image = new Image
-            {
-                Url = imageDTO.Url,
-                PostId = imageDTO.PostId
-            };
-
-            _context.Images.Add(image);
-            await _context.SaveChangesAsync();
-
-            return CreatedAtAction(
-                nameof(GetImage),
-                new { id = image.ImageId },
-                ItemToDTO(image));
-        }
-
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> DeleteImage(long id)
-        {
-            var image = await _context.Images.FindAsync(id);
-
-            if (image == null)
-            {
-                return NotFound();
-            }
-
-            _context.Images.Remove(image);
-            await _context.SaveChangesAsync();
-
-            return NoContent();
-        }
-
-        private bool ImageExists(long id) =>
-             _context.Images.Any(e => e.ImageId == id);
-
-        private static ImageDTO ItemToDTO(Image image) =>
-            new ImageDTO
-            {
-                ImageId = image.ImageId,
-                Url = image.Url,
-                PostId = image.PostId
-            };
+        };
     }
 }

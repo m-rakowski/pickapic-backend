@@ -27,18 +27,27 @@ namespace PickapicBackend.Controllers
         [HttpGet]
         public async Task<ActionResult<IEnumerable<PostDTO>>> GetPosts()
         {
-            var postDTOs = (await _context.Posts.ToListAsync()).ConvertAll(post => PostToPostDTO(post));
+            var posts = await _context.Posts.ToListAsync();
 
-            foreach (var postDTO in postDTOs)
+            foreach (var post in posts)
             {
                 var images = await _context.Images
-               .Where(image => image.PostId == postDTO.PostId)
+                      .Where(image => image.PostId == post.PostId)
                .ToListAsync();
-                var imageDTOs = images.ConvertAll(image => ImageToImageDTO(image));
 
-                postDTO.Images = imageDTOs;
-               
+                post.Images = images;
+
+                foreach (var image in images)
+                {
+                    var votes = await _context.Votes
+                   .Where(vote => vote.ImageId == image.ImageId)
+                   .ToListAsync();
+
+                    image.Votes = votes;
+                }
             }
+
+            var postDTOs = posts.ConvertAll(post => PostToPostDTO(post));
 
             return Ok(postDTOs);
         }
@@ -129,7 +138,8 @@ namespace PickapicBackend.Controllers
             new PostDTO
             {
                 PostId = post.PostId,
-                Question = post.Question
+                Question = post.Question,
+                Images = post.Images.ConvertAll(image => ImageToImageDTO(image))
             };
 
 
@@ -137,9 +147,12 @@ namespace PickapicBackend.Controllers
             new ImageDTO
             {
                 ImageId = image.ImageId,
-                PostId = image.PostId,
-                Url = image.Url
-
+                Url = image.Url,
+                Votes = image.Votes.ConvertAll(vote => VoteToVoteDTO(vote))
             };
+
+
+        private static VoteDTO VoteToVoteDTO(Vote vote) => new VoteDTO { VoteId = vote.VoteId };
+
     }
 }
