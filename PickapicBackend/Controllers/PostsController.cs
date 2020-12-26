@@ -98,16 +98,19 @@ namespace PickapicBackend.Controllers
             return NoContent();
         }
 
-        [HttpPost("posts")]
-        public async Task<ActionResult<PostDTO>> CreatePost(PostDTO postDTO)
+
+        [HttpPost]
+        public async Task<ActionResult<PostDTO>> CreatePost(PostReadModel postReadModel)
         {
             var post = new Post
             {
-                Question = postDTO.Question
+                Question = postReadModel.Question,
+                Images = new List<Image>()
             };
 
             _context.Posts.Add(post);
             await _context.SaveChangesAsync();
+
 
             return CreatedAtAction(
                 nameof(GetPost),
@@ -139,7 +142,8 @@ namespace PickapicBackend.Controllers
             {
                 PostId = post.PostId,
                 Question = post.Question,
-                Images = post.Images.ConvertAll(image => ImageToImageDTO(image))
+                Images = post.Images.ConvertAll(image => ImageToImageDTO(image)),
+                AddedByUser = "Joe Dough"
             };
 
 

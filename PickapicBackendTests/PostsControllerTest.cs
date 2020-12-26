@@ -14,7 +14,8 @@ namespace PicapicBackendTests
             var options = new DbContextOptionsBuilder<DataContext>().UseInMemoryDatabase(databaseName: "Abc").Options;
             var context = new DataContext(options);
             var controller = new PostsController(null, context);
-
+            context.Database.EnsureCreated();
+            Seed(context);
             var result = await controller.GetPosts();
 
             Assert.Empty(result.Value);

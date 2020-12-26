@@ -10,6 +10,7 @@ namespace PickapicBackend.Model
         public long PostId { get; set; }
         public string Question { get; set; }
         public DateTime AdditionDate { get; set; }
+        public String AddedByUser { get; set; }
         public virtual List<ImageDTO> Images { get; set; }
 
     }
