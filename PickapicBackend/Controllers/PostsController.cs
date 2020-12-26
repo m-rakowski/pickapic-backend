@@ -98,7 +98,7 @@ namespace PickapicBackend.Controllers
             return NoContent();
         }
 
-        [HttpPost]
+        [HttpPost("posts")]
         public async Task<ActionResult<PostDTO>> CreatePost(PostDTO postDTO)
         {
             var post = new Post
