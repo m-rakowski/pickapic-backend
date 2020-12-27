@@ -1,36 +1,28 @@
-using Microsoft.EntityFrameworkCore;
-using PickapicBackend.Controllers;
-using PickapicBackend.Data;
+using Microsoft.AspNetCore.Mvc.Testing;
+using Newtonsoft.Json;
 using PickapicBackend.Model;
+using System.Net;
+using System.Net.Http;
+using System.Threading.Tasks;
 using Xunit;
 
-namespace PicapicBackendTests
+public class PostsControllerTests : IClassFixture<WebApplicationFactory<PickapicBackend.Startup>>
 {
-    public class PostsControllerTest
+    HttpClient _client { get; }
+
+    public PostsControllerTests(WebApplicationFactory<PickapicBackend.Startup> fixture)
     {
-        [Fact]
-        public async void ShouldReturnEmptyArrayOfPosts()
-        {
-            var options = new DbContextOptionsBuilder<DataContext>().UseInMemoryDatabase(databaseName: "Abc").Options;
-            var context = new DataContext(options);
-            var controller = new PostsController(null, context);
-            context.Database.EnsureCreated();
-            Seed(context);
-            var result = await controller.GetPosts();
+        _client = fixture.CreateClient();
+    }
 
-            Assert.Empty(result.Value);
-        }
+    [Fact]
+    public async Task ShouldReturnEmptyArray()
+    {
+        var response = await _client.GetAsync("/api/posts");
 
-        private void Seed(DataContext context)
-        {
-            var posts = new[] {
-                new Post {
-                    PostId = 0,
-                    Question = "This or.. that?"
-                }
-            };
-            context.Posts.AddRange(posts);
-            context.SaveChanges();
-        }
+        Assert.Equal(HttpStatusCode.OK, response.StatusCode);
+        var posts = JsonConvert.DeserializeObject<Post[]>(await response.Content.ReadAsStringAsync());
+
+        Assert.Empty(posts);
     }
 }
