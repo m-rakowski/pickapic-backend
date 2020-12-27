@@ -1,18 +1,19 @@
 using Microsoft.AspNetCore.Mvc.Testing;
 using Newtonsoft.Json;
 using PickapicBackend.Model;
+using PickapicBackendTests.Utils;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
 using Xunit;
 
-public class PostsControllerTests : IClassFixture<WebApplicationFactory<PickapicBackend.Startup>>
+public class PostsControllerTests : IClassFixture<PickapicWebApplicationFactory>
 {
     HttpClient _client { get; }
 
-    public PostsControllerTests(WebApplicationFactory<PickapicBackend.Startup> fixture)
+    public PostsControllerTests(PickapicWebApplicationFactory webApplicationFactory)
     {
-        _client = fixture.CreateClient();
+        _client = webApplicationFactory.CreateClient();
     }
 
     [Fact]
