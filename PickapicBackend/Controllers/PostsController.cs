@@ -139,7 +139,7 @@ namespace PickapicBackend.Controllers
 
         private static PostDTO PostToPostDTO(Post post) =>
             new PostDTO
-            {
+            {   
                 PostId = post.PostId,
                 Question = post.Question,
                 Images = post.Images.ConvertAll(image => ImageToImageDTO(image)),

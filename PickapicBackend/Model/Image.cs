@@ -4,12 +4,16 @@ using System.Linq;
 using System.Threading.Tasks;
 
 namespace PickapicBackend.Model
-{
+{ 
     public class Image
     {
         // own fields
         public long ImageId { get; set; }
         public string Url { get; set; }
+
+        public string ImagePath { get; set; }
+        
+        public string MimeType { get; set; }
 
         // foreign key
         public long PostId { get; set; }

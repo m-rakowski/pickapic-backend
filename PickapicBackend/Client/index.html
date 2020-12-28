@@ -1,0 +1,20 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title></title>
+    <script src="script.js"></script>
+</head>
+<body>
+    <form action="/api/images/image" method="post"
+          enctype="multipart/form-data">
+        <label for="files">Select files:</label>
+        <input type="file" id="files" name="files" accept="image/*" multiple enc>
+    </form>
+    <button onclick="onClick()">OK</button>
+
+    <div id="images">
+
+    </div>
+</body>
+</html>

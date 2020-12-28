@@ -5,6 +5,8 @@
 
 appsettings.Development.json
 
+/PickapicBackend/cms/**
+
 # User-specific files
 *.rsuser
 *.suo

@@ -1,63 +1,84 @@
-﻿using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using Microsoft.Extensions.Logging;
+﻿using Microsoft.AspNetCore.Mvc;
+using PickapicBackend.Contract;
 using PickapicBackend.Data;
 using PickapicBackend.Model;
-
+using System;
+using System.IO;
+using System.Threading.Tasks;
+using System.Linq;
 namespace PickapicBackend.Controllers
 {
     [ApiController]
-    [Route("api/[controller]")]
+    [Route("api/[controller]/[action]")]
     public class ImagesController : ControllerBase
     {
-        private readonly ILogger<ImagesController> _logger;
         private DataContext _context = null;
 
-        public ImagesController(ILogger<ImagesController> logger, DataContext context)
+        public ImagesController(DataContext _context)
         {
-            _context = context;
-            _logger = logger;
-        } 
+            this._context = _context;
+        }
 
+        [ActionName("image")]
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Image>>> GetImages()
+        public async Task<IActionResult> GetImage([FromQuery] long id)
         {
-            var images = await _context.Images.ToListAsync();
-            foreach (var image in images)
-            {
-                var votes = await _context.Votes
-               .Where(vote => vote.ImageId == image.ImageId)
-               .ToListAsync();
-
-                image.Votes = votes;       
-            }
-
-            var imageDTOs = images.ConvertAll(image => ImageToImageDTO(image));
-            return Ok(imageDTOs);
-        }
-
-        [HttpGet("{id}")]
-        public async Task<ActionResult<ImageDTO>> GetImage(long id)
-        {
-            var post = await _context.Images.FindAsync(id);
-
-            if (post == null)
-            {
+            var image = await _context.Images.FindAsync(id).ConfigureAwait(true);
+            if (image is null)
                 return NotFound();
+
+            using var stream = System.IO.File.OpenRead(image.ImagePath);
+            using var memoryStream = new MemoryStream();
+            await stream.CopyToAsync(memoryStream).ConfigureAwait(true);
+            var bytes = memoryStream.ToArray();
+            return File(bytes, image.MimeType);
+        }
+
+        [ActionName("image")]
+        [HttpPost]
+        public async Task<ActionResult<ImageUploadResult>> PostImage([FromForm] ImageUploadRequest imageUploadRequest)
+        {
+
+            if ((imageUploadRequest is null) || (imageUploadRequest.Files is null))
+                return NotFound("No files provided");
+
+            var files = imageUploadRequest.Files;
+
+            long maxId = _context.Images
+              .OrderByDescending(p => p.ImageId)
+              .Select(p => p.ImageId)
+              .FirstOrDefault();
+
+            var root = Directory.GetCurrentDirectory();
+            var cmsPath = Path.Combine(root, "cms");
+            Directory.CreateDirectory(cmsPath);
+
+            var result = new ImageUploadResult();
+
+            for(int i = 0; i < files.Length; i++)
+            {
+                string fileName = (maxId + 1 + i).ToString();
+                string filePath = Path.Combine(cmsPath, fileName);
+
+                using var stream = files[i].OpenReadStream();
+                using var fileStream = System.IO.File.OpenWrite(filePath);
+                await stream.CopyToAsync(fileStream).ConfigureAwait(true);
+
+                var image = new Image
+                {
+                    PostId = 1,
+                    ImagePath = filePath,
+                    MimeType = files[i].ContentType
+                };
+
+                _context.Images.Add(image);
+                await _context.SaveChangesAsync().ConfigureAwait(true);
+
+                result.Ids.Add(fileName);
+
             }
 
-            return Ok(ImageToImageDTO(post));
+            return Ok(result);
         }
-        private static ImageDTO ImageToImageDTO(Image image) => new ImageDTO {
-            ImageId = image.ImageId,
-            Url = image.Url,
-            Votes = image.Votes.ConvertAll(vote => new VoteDTO { VoteId = vote.VoteId })
-
-        };
     }
 }
